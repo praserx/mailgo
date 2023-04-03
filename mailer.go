@@ -6,12 +6,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"mime"
+	"net/smtp"
 	"strings"
 	"time"
 
-	"github.com/emersion/go-sasl"
-	"github.com/emersion/go-smtp"
+	gosasl "github.com/emersion/go-sasl"
+	gosmtp "github.com/emersion/go-smtp"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 )
 
@@ -27,7 +29,7 @@ type Mailer struct {
 	Port      string
 	Name      string
 	From      string
-	Creds     sasl.Client
+	Creds     gosasl.Client
 	Localizer *i18n.Localizer
 }
 
@@ -103,8 +105,62 @@ func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (err
 		body += "\r\n--" + boundary + "--\r\n"
 	}
 
+	if m.Creds == nil {
+		for _, recipient := range recipients {
+			m.sendMailWithoutAuth(recipient, body)
+		}
+	}
+	return m.sendMail(recipients, body)
+}
+
+// sendMail sends e-mail via smtp-go with authentication.
+func (m *Mailer) sendMail(recipients []string, body string) error {
 	addr := fmt.Sprintf("%s:%s", m.Host, m.Port)
-	return smtp.SendMail(addr, m.Creds, m.From, recipients, strings.NewReader(body))
+	return gosmtp.SendMail(addr, m.Creds, m.From, recipients, strings.NewReader(body))
+}
+
+// sendMail sends e-mail via standard go smtp library without authentication.
+func (m *Mailer) sendMailWithoutAuth(recipient string, body string) error {
+	var err error
+	var conn *smtp.Client
+	var wc io.WriteCloser
+
+	addr := fmt.Sprintf("%s:%s", m.Host, m.Port)
+
+	// Connect to the remote SMTP server.
+	if conn, err = smtp.Dial(addr); err != nil {
+		return err
+	}
+
+	// Set the sender
+	if err = conn.Mail(m.From); err != nil {
+		return err
+	}
+
+	// Set the recipient
+	if err = conn.Rcpt(recipient); err != nil {
+		return err
+	}
+
+	// Send the email body
+	if wc, err = conn.Data(); err != nil {
+		return err
+	}
+
+	if _, err = fmt.Fprint(wc, body); err != nil {
+		return err
+	}
+
+	if err = wc.Close(); err != nil {
+		return err
+	}
+
+	// Send the QUIT command and close the connection
+	if err = conn.Quit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // getGeneralHeader returns e-mail general header which contains from, to and
