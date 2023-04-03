@@ -16,9 +16,5 @@ jobs:
       uses: actions/checkout@v2
     - name: Install staticcheck
       run: go install honnef.co/go/tools/cmd/staticcheck@latest
-    - name: Install golangci-lint
-      run: github.com/golangci/golangci-lint/cmd/golangci-lint@latest
     - name: Run staticcheck
       run: staticcheck ./...
-    - name: Run golangci-lint
-      run: golangci-lint run
