@@ -1,4 +1,4 @@
-name: Package mailgo test
+name: staticcheck
 on: [push, pull_request]
 jobs:
   test:
