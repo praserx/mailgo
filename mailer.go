@@ -189,12 +189,21 @@ func (m *Mailer) getGeneralHeader(subject, boundary string, to []string) string 
 	content += "To: " + recipients + "\r\n"
 	content += "Reply-To: " + mime.QEncoding.Encode("utf-8", m.Name) + " <no-reply" + domain + ">\r\n"
 	content += "Subject: " + mime.QEncoding.Encode("utf-8", subject) + "\r\n"
-	content += "Return-Path: " + mime.QEncoding.Encode("utf-8", m.ReturnPath) + "\r\n"
 	content += "MIME-Version: 1.0\r\n"
 	content += "Message-ID: <" + fmt.Sprintf("%x", hasher.Sum(nil)) + domain + ">\r\n"
 	content += "Date: " + time.Now().Format(rfc2822) + "\r\n"
 	content += "Content-Type: multipart/alternative; boundary=\"" + boundary + "\"\r\n"
+	content += getReturnPath(m.ReturnPath)
 	return content
+}
+
+// getReturnPath return valid return if some is set. Otherwise empty string is
+// returned.
+func getReturnPath(returnPath string) string {
+	if returnPath != "" {
+		return "Return-Path: " + mime.QEncoding.Encode("utf-8", returnPath) + "\r\n"
+	}
+	return ""
 }
 
 // getPlainTextHeader returns header for plaintext part of message.
