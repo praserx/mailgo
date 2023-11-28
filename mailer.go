@@ -25,12 +25,13 @@ var ErrNoFrom = errors.New("from option missing")
 
 // Mailer struct definition.
 type Mailer struct {
-	Host      string
-	Port      string
-	Name      string
-	From      string
-	Creds     gosasl.Client
-	Localizer *i18n.Localizer
+	Host       string
+	Port       string
+	Name       string
+	From       string
+	Creds      gosasl.Client
+	Localizer  *i18n.Localizer
+	ReturnPath string
 }
 
 func init() {
@@ -65,11 +66,12 @@ func NewMailer(opts ...MailerOption) (*Mailer, error) {
 	}
 
 	mlr := &Mailer{
-		Host:  options.Host,
-		Port:  options.Port,
-		Name:  options.Name,
-		From:  options.From,
-		Creds: options.Creds,
+		Host:       options.Host,
+		Port:       options.Port,
+		Name:       options.Name,
+		From:       options.From,
+		Creds:      options.Creds,
+		ReturnPath: options.RetPath,
 	}
 
 	return mlr, nil
@@ -187,6 +189,7 @@ func (m *Mailer) getGeneralHeader(subject, boundary string, to []string) string 
 	content += "To: " + recipients + "\r\n"
 	content += "Reply-To: " + mime.QEncoding.Encode("utf-8", m.Name) + " <no-reply" + domain + ">\r\n"
 	content += "Subject: " + mime.QEncoding.Encode("utf-8", subject) + "\r\n"
+	content += "Return-Path: " + mime.QEncoding.Encode("utf-8", m.ReturnPath) + "\r\n"
 	content += "MIME-Version: 1.0\r\n"
 	content += "Message-ID: <" + fmt.Sprintf("%x", hasher.Sum(nil)) + domain + ">\r\n"
 	content += "Date: " + time.Now().Format(rfc2822) + "\r\n"

@@ -3,11 +3,12 @@ package mailgo
 import "github.com/emersion/go-sasl"
 
 type MailerOptions struct {
-	Host  string
-	Port  string
-	Name  string
-	From  string
-	Creds sasl.Client
+	Host    string
+	Port    string
+	Name    string
+	From    string
+	Creds   sasl.Client
+	RetPath string
 }
 
 type MailerOption func(*MailerOptions)
@@ -39,5 +40,11 @@ func WithFrom(from string) MailerOption {
 func WithCredentials(username, password string) MailerOption {
 	return func(opts *MailerOptions) {
 		opts.Creds = sasl.NewPlainClient("", username, password)
+	}
+}
+
+func WithReturnPath(returnPath string) MailerOption {
+	return func(opts *MailerOptions) {
+		opts.RetPath = returnPath
 	}
 }
