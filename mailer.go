@@ -80,17 +80,18 @@ func NewMailer(opts ...MailerOption) (*Mailer, error) {
 // SendMail sends mail to given recipients with specified subject and plaintext
 // and HTML message (that's why function requires both). If plaintext of html
 // message is empty, then that format is not used.
-func SendMail(recipients []string, subject, plain, html string) error {
+func SendMail(recipients []string, subject, plain, html string) []error {
 	return mailer.SendMail(recipients, subject, plain, html)
 }
 
 // SendMail sends mail to given recipients with specified subject and plaintext
 // and HTML message (that's why function requires both). If plaintext of html
 // message is empty, then that format is not used.
-func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (err error) {
+func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (errs []error) {
+	var err error
 	var boundary string
 	if boundary, err = generateRandomString(16); err != nil {
-		return err
+		return append(errs, err)
 	}
 
 	var body string
@@ -109,11 +110,11 @@ func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (err
 
 	if m.Creds == nil {
 		for _, recipient := range recipients {
-			m.sendMailWithoutAuth(recipient, body)
+			errs = append(errs, fmt.Errorf("cannot sent e-mail for: %s: %w", recipient, m.sendMailWithoutAuth(recipient, body)))
 		}
-		return nil
+		return errs
 	}
-	return m.sendMail(recipients, body)
+	return append(errs, m.sendMail(recipients, body))
 }
 
 // sendMail sends e-mail via smtp-go with authentication.
