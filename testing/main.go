@@ -63,10 +63,18 @@ func main() {
 				fmt.Fprintf(os.Stderr, "cannot initialize mailer: %v", err.Error())
 				os.Exit(1)
 			} else {
-				if err = mailer.SendMail([]string{"tpekar@volny.cz"}, "Test mail", "Test", "<p>Test</p>"); err != nil {
-					fmt.Fprintf(os.Stderr, "fatal: %v", err.Error())
+				errs := mailer.SendMail([]string{"praserx@gmail.com"}, "Test mail", "Test", "<p>Test</p>")
+				for _, err := range errs {
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "fatal: %v", err.Error())
+
+					}
+				}
+
+				if len(errs) != 0 {
 					os.Exit(1)
 				}
+
 			}
 
 			return nil
