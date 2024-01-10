@@ -110,11 +110,18 @@ func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (err
 
 	if m.Creds == nil {
 		for _, recipient := range recipients {
-			errs = append(errs, fmt.Errorf("cannot sent e-mail for: %s: %w", recipient, m.sendMailWithoutAuth(recipient, body)))
+			if err := m.sendMailWithoutAuth(recipient, body); err != nil {
+				errs = append(errs, fmt.Errorf("cannot sent e-mail for: %s: %w", recipient, err))
+			}
 		}
 		return errs
 	}
-	return append(errs, m.sendMail(recipients, body))
+
+	if err := m.sendMail(recipients, body); err != nil {
+		return append(errs, m.sendMail(recipients, body))
+	}
+
+	return nil
 }
 
 // sendMail sends e-mail via smtp-go with authentication.

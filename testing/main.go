@@ -67,7 +67,6 @@ func main() {
 				for _, err := range errs {
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "fatal: %v", err.Error())
-
 					}
 				}
 
