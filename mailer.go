@@ -111,6 +111,7 @@ func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (err
 		for _, recipient := range recipients {
 			m.sendMailWithoutAuth(recipient, body)
 		}
+		return nil
 	}
 	return m.sendMail(recipients, body)
 }
