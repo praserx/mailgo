@@ -109,16 +109,14 @@ func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (err
 	}
 
 	if m.Creds == nil {
-		for _, recipient := range recipients {
-			if err := m.sendMailWithoutAuth(recipient, body); err != nil {
-				errs = append(errs, fmt.Errorf("cannot sent e-mail for: %s: %w", recipient, err))
-			}
+		if err := m.sendMailWithoutAuth(recipients, body); err != nil {
+			return err
 		}
-		return errs
+		return nil
 	}
 
 	if err := m.sendMail(recipients, body); err != nil {
-		return append(errs, m.sendMail(recipients, body))
+		return append(errs, err)
 	}
 
 	return nil
@@ -131,17 +129,35 @@ func (m *Mailer) sendMail(recipients []string, body string) error {
 }
 
 // sendMail sends e-mail via standard go smtp library without authentication.
-func (m *Mailer) sendMailWithoutAuth(recipient string, body string) error {
+func (m *Mailer) sendMailWithoutAuth(recipients []string, body string) (errs []error) {
 	var err error
 	var conn *smtp.Client
-	var wc io.WriteCloser
 
 	addr := fmt.Sprintf("%s:%s", m.Host, m.Port)
 
 	// Connect to the remote SMTP server.
 	if conn, err = smtp.Dial(addr); err != nil {
-		return err
+		return append(errs, err)
 	}
+
+	for _, recipient := range recipients {
+		if err := m.sendMailWithoutAuthInner(conn, recipient, body); err != nil {
+			errs = append(errs, fmt.Errorf("cannot sent e-mail for: %s: %w", recipient, err))
+		}
+	}
+
+	// Send the QUIT command and close the connection
+	if err = conn.Quit(); err != nil {
+		return append(errs, err)
+	}
+
+	return nil
+}
+
+// sendMail sends e-mail via standard go smtp library without authentication using initialized SMTP client.
+func (m *Mailer) sendMailWithoutAuthInner(conn *smtp.Client, recipient string, body string) error {
+	var err error
+	var wc io.WriteCloser
 
 	// Set the sender
 	if err = conn.Mail(m.From); err != nil {
@@ -163,11 +179,6 @@ func (m *Mailer) sendMailWithoutAuth(recipient string, body string) error {
 	}
 
 	if err = wc.Close(); err != nil {
-		return err
-	}
-
-	// Send the QUIT command and close the connection
-	if err = conn.Quit(); err != nil {
 		return err
 	}
 

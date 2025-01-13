@@ -1,3 +1,7 @@
+# v1.3.0
+- Optimalization - sending mails without authentication to multiple recipients - initialize the connection only once.
+- Fix return only the error when sending with authentication
+
 # v1.2.0
 - Fixed mail duplicates
 - Added missing error messages for `SendMail` and `m.SendMail` functions
