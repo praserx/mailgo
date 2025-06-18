@@ -34,6 +34,11 @@ type Mailer struct {
 	ReturnPath string
 }
 
+type Attachment struct {
+	Filename string
+	Content  []byte
+}
+
 func init() {
 	mailer, _ = NewMailer()
 }
@@ -81,13 +86,13 @@ func NewMailer(opts ...MailerOption) (*Mailer, error) {
 // and HTML message (that's why function requires both). If plaintext of html
 // message is empty, then that format is not used.
 func SendMail(recipients []string, subject, plain, html string) []error {
-	return mailer.SendMail(recipients, subject, plain, html)
+	return mailer.SendMail(recipients, subject, plain, html, nil)
 }
 
 // SendMail sends mail to given recipients with specified subject and plaintext
 // and HTML message (that's why function requires both). If plaintext of html
 // message is empty, then that format is not used.
-func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (errs []error) {
+func (m *Mailer) SendMail(recipients []string, subject, plain, html string, attachments []Attachment) (errs []error) {
 	var err error
 	var boundary string
 	if boundary, err = generateRandomString(16); err != nil {
@@ -105,8 +110,22 @@ func (m *Mailer) SendMail(recipients []string, subject, plain, html string) (err
 	if len(html) != 0 {
 		body += getHTMLHeader()
 		body += "\r\n" + lineSplit(base64.StdEncoding.EncodeToString([]byte(html))) + "\r\n"
-		body += "\r\n--" + boundary + "--\r\n"
 	}
+
+	if len(attachments) > 0 {
+		for k, attachment := range attachments {
+			body += "\r\n--" + boundary + "\r\n"
+			body += getAttachmentHeader(attachment.Filename)
+			body += "\r\n" + lineSplit(base64.StdEncoding.EncodeToString(attachment.Content))
+
+			if k < len(attachments)-1 {
+				body += "\r\n--" + boundary + "\r\n"
+			}
+		}
+
+	}
+
+	body += "\r\n--" + boundary + "--\r\n"
 
 	if m.Creds == nil {
 		if err := m.sendMailWithoutAuth(recipients, body); err != nil {
@@ -240,6 +259,14 @@ func getHTMLHeader() string {
 	content += "Content-Transfer-Encoding: BASE64\r\n"
 	content += "Content-Disposition: inline\r\n"
 	return content
+}
+
+func getAttachmentHeader(filename string) string {
+	header := "Content-Type: application/octet-stream; name=\"" + filename + "\"\r\n"
+	header += "Content-Transfer-Encoding: base64\r\n"
+	header += "Content-Disposition: attachment; filename=\"" + filename + "\"\r\n"
+
+	return header
 }
 
 // generateRandomString returns random string.

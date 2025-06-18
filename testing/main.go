@@ -38,6 +38,15 @@ var flags = []cli.Flag{
 		Name:  "password",
 		Usage: "password for authentication",
 	},
+	&cli.StringFlag{
+		Name:  "to",
+		Usage: "recipient address",
+		Value: "praserx@gmail.com",
+	},
+	&cli.StringSliceFlag{
+		Name:  "attachments",
+		Usage: "attachments filenames",
+	},
 }
 
 func main() {
@@ -63,7 +72,23 @@ func main() {
 				fmt.Fprintf(os.Stderr, "cannot initialize mailer: %v", err.Error())
 				os.Exit(1)
 			} else {
-				errs := mailer.SendMail([]string{"praserx@gmail.com"}, "Test mail", "Test", "<p>Test</p>")
+				var attachments []mailgo.Attachment
+
+				paramAttachments := ctx.StringSlice("attachments")
+
+				for _, attachmentFilename := range paramAttachments {
+					attachmentData, err := os.ReadFile(attachmentFilename)
+
+					if err != nil {
+						fmt.Println(err)
+						return err
+					}
+
+					a := mailgo.Attachment{Filename: attachmentFilename, Content: attachmentData}
+					attachments = append(attachments, a)
+				}
+
+				errs := mailer.SendMail([]string{ctx.String("to")}, "Test mail", "Test", "<p>Test</p>", attachments)
 				for _, err := range errs {
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "fatal: %v", err.Error())
