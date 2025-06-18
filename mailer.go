@@ -19,7 +19,7 @@ import (
 
 var mailer *Mailer
 
-// ErrNilMailer specifies nil mailer instance error
+// ErrNilMailer specifies nil mailer instance error.
 var ErrNilMailer = errors.New("no mailer instance")
 var ErrNoFrom = errors.New("from option missing")
 
@@ -34,11 +34,13 @@ type Mailer struct {
 	ReturnPath string
 }
 
+// Attachment struct defines attachment for e-mail.
 type Attachment struct {
 	Filename string
 	Content  []byte
 }
 
+// init initializes package mailer with default parameters.
 func init() {
 	mailer, _ = NewMailer()
 }
@@ -261,6 +263,7 @@ func getHTMLHeader() string {
 	return content
 }
 
+// getAttachmentHeader returns header for attachment part of message.
 func getAttachmentHeader(filename string) string {
 	header := "Content-Type: application/octet-stream; name=\"" + filename + "\"\r\n"
 	header += "Content-Transfer-Encoding: base64\r\n"
